@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Empaquetar
+        run: |
+          zip -r com.malzar.lhmmonitor.sdPlugin.zip com.malzar.lhmmonitor.sdPlugin -x "*.log"
+          cp com.malzar.lhmmonitor.sdPlugin.zip com.malzar.lhmmonitor.streamDeckPlugin
+      - name: Publicar release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            # Release creada a mano desde la web: solo se adjunta el zip
+            gh release upload "${GITHUB_REF_NAME}" com.malzar.lhmmonitor.sdPlugin.zip com.malzar.lhmmonitor.streamDeckPlugin --clobber
+          else
+          gh release create "${GITHUB_REF_NAME}" com.malzar.lhmmonitor.sdPlugin.zip com.malzar.lhmmonitor.streamDeckPlugin \
+            --title "LHMonitor fancy ${GITHUB_REF_NAME#v}" \
+            --notes 'Descarga `com.malzar.lhmmonitor.sdPlugin.zip` y en OpenDeck: **Plugins → Install from file**, sin descomprimir. Reinicia OpenDeck.'
+          fi
